@@ -16,8 +16,9 @@
       }
     ],
     "configProperties": {
+      "System.Diagnostics.Tracing.EventSource.IsSupported": false,
       "System.GC.Server": true,
-      "System.Reflection.NullabilityInfoContext.IsSupported": true,
+      "System.Resources.UseSystemResourceKeys": true,
       "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
       "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
     }

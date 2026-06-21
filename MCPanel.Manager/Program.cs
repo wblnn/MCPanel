@@ -103,6 +103,7 @@ app.MapPost("/api/servers/{id}/start", async (string id, ServerManager mgr, IHub
     process.Exited += async (_, _) =>
     {
         mgr.Stop(id);
+        process.Dispose(); // #2 显式释放进程句柄，防止句柄泄漏
         await hub.Clients.All.SendAsync("ServerStatusChanged", id, "stopped");
         await hub.Clients.All.SendAsync("ReceiveLog", id, "[系统] 服务器已停止。");
     };

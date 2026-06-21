@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MCPanel")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+79bf42eb6deb977b602ed4b6733d701461761f3a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+15b8b8c8a3d7ce1869674738a7201eaed8ce1bae")]
 [assembly: System.Reflection.AssemblyProductAttribute("MCPanel")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MCPanel")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

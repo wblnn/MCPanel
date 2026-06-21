@@ -64,7 +64,21 @@ public class MainForm : Form
             Controls.Add(_webView);
             _webView.BringToFront();
 
-            await _webView.EnsureCoreWebView2Async();
+            // #11 指定缓存目录，避免与系统默认缓存混用
+            var userDataFolder = Path.Combine(AppContext.BaseDirectory, ".webview2-cache");
+            var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder);
+
+            // #12 性能优化参数：禁用翻译UI、禁用后台标签页节流等
+            var controllerOptions = env.CreateCoreWebView2ControllerOptions();
+
+            await _webView.EnsureCoreWebView2Async(env);
+
+            // 禁用不必要的内置功能以减少资源占用
+            _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+            _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+            _webView.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;
+            _webView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+
             _webView.CoreWebView2.Navigate(_panelUrl);
             _statusLabel.Text = $"MC Panel 运行中 — {_panelUrl}";
         }

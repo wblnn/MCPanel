@@ -207,17 +207,28 @@
 
     <script>
         // ================= 全局状态 =================
-        let servers = [];        // 服务器列表 [{id, name, serverPath, jarName, javaArgs, javaPath, status}]
-        let selectedId = null;   // 当前选中的服务器ID
-        let logStore = {};       // 每个服务器的日志缓存 { serverId: [{msg, type}] }
+        const MAX_LOG_ENTRIES = 500;   // #3 每个服务器最多保留 500 条日志
+        const MAX_DOM_LINES = 500;     // #7 控制台最大 DOM 行数
+        const MAX_TOASTS = 5;          // #10 最多同时显示 5 个 Toast
+
+        let servers = [];
+        let selectedId = null;
+        let logStore = {};
         let connection = null;
-        let isEditing = false;   // 是否在编辑模式
+        let isEditing = false;
 
         // ================= SignalR 连接 =================
         function connectSignalR() {
+            // #9 清理旧连接
+            if (connection) {
+                connection.stop().catch(() => {});
+                connection = null;
+            }
+
             connection = new signalR.HubConnectionBuilder()
                 .withUrl("/hubs/console")
-                .withAutomaticReconnect([0, 1000, 5000, 10000, 30000])
+                // #8 更平滑的重连策略：从 1s 开始递增
+                .withAutomaticReconnect([1000, 3000, 5000, 10000, 30000])
                 .build();
 
             connection.on("ReceiveLog", (serverId, message) => {
@@ -227,6 +238,9 @@
                 else if (message.includes('[系统]')) type = 'system';
                 else if (message.includes('[WARN]') || message.includes('[警告]')) type = 'warn';
                 logStore[serverId].push({ msg: message, type });
+                // #3 超出上限时删除最早的消息
+                if (logStore[serverId].length > MAX_LOG_ENTRIES)
+                    logStore[serverId].splice(0, logStore[serverId].length - MAX_LOG_ENTRIES);
                 if (selectedId === serverId) appendLog(message, type);
             });
 
@@ -418,6 +432,9 @@
             else if (type === 'warn') div.className = 'log-warn';
             else div.className = 'log-info';
             c.appendChild(div);
+            // #7 超出最大行数时移除最早的 DOM 节点
+            while (c.childElementCount > MAX_DOM_LINES)
+                c.removeChild(c.firstElementChild);
             c.scrollTop = c.scrollHeight;
         }
 
@@ -457,11 +474,14 @@
         // ================= 通知 =================
         function showToast(msg, type) {
             const t = document.getElementById('toast');
+            // #10 超过最大数量时移除最早的 Toast
+            while (t.childElementCount >= MAX_TOASTS)
+                t.removeChild(t.firstElementChild);
             const div = document.createElement('div');
             div.className = `toast-item ${type}`;
             div.textContent = msg;
             t.appendChild(div);
-            setTimeout(() => div.remove(), 4000);
+            setTimeout(() => { if (div.parentNode) div.remove(); }, 4000);
         }
 
         // ================= 初始化 =================

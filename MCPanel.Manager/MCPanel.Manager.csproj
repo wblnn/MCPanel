@@ -14,12 +14,16 @@
     <!-- 程序名称 -->
     <AssemblyName>MCPanel</AssemblyName>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
+    <!-- #5 发布时内存优化 -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <!-- #6 发布版隐藏控制台窗口（桌面应用） -->
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.17" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
   </ItemGroup>
 
