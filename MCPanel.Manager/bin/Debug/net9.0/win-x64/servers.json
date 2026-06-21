@@ -1,0 +1,10 @@
+[
+  {
+    "Id": "survival_01",
+    "Name": "?????",
+    "ServerPath": "D:/mc-server",
+    "JarName": "server.jar",
+    "JavaArgs": "-Xms1G -Xmx4G",
+    "JavaPath": ""
+  }
+]
