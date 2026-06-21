@@ -1,0 +1,6 @@
+@MCPanel.Manager_HostAddress = http://localhost:5162
+
+GET {{MCPanel.Manager_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
