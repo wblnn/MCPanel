@@ -1,0 +1,6 @@
+/* 引入 xterm 终端的样式（必须放在最上面！） */
+@import '@xterm/xterm/css/xterm.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
