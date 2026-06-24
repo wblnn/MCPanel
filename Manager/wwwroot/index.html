@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>MC 面板 V10</title>
+    <style>
+        body { font-family: sans-serif; background: #1e1e1e; color: #eee; padding: 20px; max-width: 800px; margin: 0 auto; }
+        h2 { color: #4ec9b0; }
+        #console { background: #000; height: 400px; overflow-y: scroll; padding: 15px; font-family: Consolas, monospace; border: 1px solid #333; white-space: pre-wrap; font-size: 14px; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-start { background: #0e639c; }
+        .btn-stop { background: #c72e2e; }
+        .btn-send { background: #388a34; }
+        input { padding: 10px; width: 60%; background: #333; border: 1px solid #555; color: white; }
+        .log-error { color: #f48771; }
+        .log-system { color: #6a9955; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>🎮 我的世界 - 极简控制面板</h2>
+    
+    <div>
+        <button class="btn-start" onclick="startServer()">🚀 启动服务器</button>
+        <button class="btn-stop" onclick="stopServer()">🛑 停止服务器</button>
+    </div>
+
+    <h3>📜 实时日志：</h3>
+    <div id="console"></div>
+
+    <div style="margin-top: 15px;">
+        <input type="text" id="cmdInput" placeholder="输入指令，如: say 你好" onkeypress="if(event.key==='Enter') sendCommand()">
+        <button class="btn-send" onclick="sendCommand()">发送</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/console") 
+            .withAutomaticReconnect() 
+            .build();
+
+        connection.on("ReceiveLog", (message) => {
+            const div = document.getElementById("console");
+            const p = document.createElement("div");
+            p.innerText = message;
+            if (message.includes("[错误]")) p.className = "log-error";
+            else if (message.includes("[系统]")) p.className = "log-system";
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight; 
+        });
+
+        connection.start().catch(err => console.error(err));
+
+        async function startServer() {
+            // ⚠️【重要】：把下面的路径改成你电脑上真实的 MC 服务端文件夹路径！
+            // 注意：路径里的斜杠必须是正斜杠 / ，不能是反斜杠 \
+            const res = await fetch("/api/start", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    serverPath: "D:/test", // 改成你的路径，比如 "E:/Games/MC_Server"
+                    jarName: "minecraft_server.1.12.2.jar"                // 改成你的jar包名字
+                })
+            });
+            alert(await res.text());
+        }
+
+        async function stopServer() {
+            const res = await fetch("/api/stop", { method: "POST" });
+            alert(await res.text());
+        }
+
+        async function sendCommand() {
+            const input = document.getElementById("cmdInput");
+            if (!input.value) return;
+            const res = await fetch("/api/command", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ command: input.value })
+            });
+            alert(await res.text());
+            input.value = "";
+        }
+    </script>
+</body>
+</html>

@@ -1,4 +1,0 @@
-D:\MCPanel\publish\win-x64\appsettings.Development.json
-D:\MCPanel\publish\win-x64\appsettings.json
-D:\MCPanel\publish\win-x64\MCPanel.pdb
-D:\MCPanel\publish\win-x64\MCPanel.exe
