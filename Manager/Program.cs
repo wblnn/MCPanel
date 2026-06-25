@@ -4,7 +4,37 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Manager.Data;
 
+// ================= 商品级端口管理 =================
+int serverPort = 5139; // 默认首选端口
+
+// 检查端口是否被占用的辅助方法
+bool IsPortInUse(int port)
+{
+    var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port);
+    try { listener.Start(); listener.Stop(); return false; }
+    catch { return true; }
+}
+
+// 如果 5139 被占用，就往后找，直到找到空闲的
+while (IsPortInUse(serverPort)) 
+{
+    serverPort++;
+    if (serverPort > 5200) throw new Exception("找不到可用端口！"); // 防止死循环
+}
+
+// 【关键】把找到的真实端口写入同目录下的 port.txt，供前端读取
+string portFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "port.txt");
+System.IO.File.WriteAllText(portFilePath, serverPort.ToString());
+
+Console.WriteLine($"[端口管理] 后端将使用端口: {serverPort}");
+// ================================================
+
 var builder = WebApplication.CreateBuilder(args);
+
+// 【关键】强制后端使用我们找到的端口（覆盖 launchSettings.json 的设置）
+builder.WebHost.UseUrls($"http://localhost:{serverPort}");
+
+// ... 下面的代码保持不变 ...
 
 // ================= 1. 注册服务 =================
 builder.Services.AddSignalR();

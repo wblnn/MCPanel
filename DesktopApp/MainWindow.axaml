@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:DesktopApp" 
+        x:Class="DesktopApp.MainWindow"
+        Title="MC 面板 V10 - 樱花粉版"
+        Width="1100" Height="750"
+        WindowStartupLocation="CenterScreen"
+        Background="#fff0f5"> <!-- 窗口背景：极淡粉 -->
+
+    <Grid ColumnDefinitions="220, *" Background="#fff0f5">
+        
+        <!-- 左侧导航栏 -->
+        <Border Grid.Column="0" Background="#ffe4e9" Padding="15"> <!-- 侧边栏：柔粉 -->
+            <StackPanel>
+                <TextBlock Text=" MC 面板 V10" FontSize="20" FontWeight="Bold" Foreground="#d63384" Margin="0,0,0,30"/> <!-- 标题：深粉色 -->
+                
+                <Button Content="📋 实例列表" Name="BtnList" Margin="0,8" Padding="10" HorizontalAlignment="Stretch" Click="BtnList_Click" Background="#ffb6c1" Foreground="White"/>
+                <Button Content="💻 控制台" Name="BtnConsole" Margin="0,8" Padding="10" HorizontalAlignment="Stretch" Click="BtnConsole_Click" Background="#ffb6c1" Foreground="White"/>
+                <Button Content=" 文件管理" Name="BtnFiles" Margin="0,8" Padding="10" HorizontalAlignment="Stretch" Click="BtnFiles_Click" Background="#ffb6c1" Foreground="White"/>
+                
+                <Border Margin="0,30,0,0" Padding="10" Background="#ffe4e9" CornerRadius="5" BorderBrush="#ffb6c1" BorderThickness="1">
+                    <TextBlock Text="状态: 连接中..." Name="TxtStatus" Foreground="#555555" FontSize="12" TextWrapping="Wrap"/>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 右侧主内容区 -->
+        <Border Grid.Column="1" Padding="20" Background="#fff0f5">
+            
+            <Grid>
+                
+                <!-- 视图 1：实例列表 -->
+                <StackPanel Name="ViewList" IsVisible="True">
+                    <TextBlock Text="服务器实例" FontSize="24" FontWeight="Bold" Foreground="#333333" Margin="0,0,0,20"/> <!-- 标题：深灰 -->
+                    <Button Content="+ 新建实例" Name="BtnAddInstance" HorizontalAlignment="Right" Margin="0,0,0,10" Click="BtnAddInstance_Click" Background="#d63384" Foreground="White"/>
+                    
+                    <ListBox Name="InstanceListBox" 
+                             Background="#ffe6ea" 
+                             Foreground="#333333"
+                             SelectionChanged="InstanceListBox_SelectionChanged"
+                             Margin="0,10">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="local:InstanceDto">
+                                <Border Background="#ffffff" Padding="15" Margin="0,5" CornerRadius="8" BorderBrush="#ffb6c1" BorderThickness="1"> <!-- 卡片：纯白边框粉 -->
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#d63384"/> <!-- 实例名：深粉 -->
+                                            <TextBlock Text="{Binding Status}" Foreground="#666666" Margin="0,5,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                            <Button Content="启动" Margin="5,0" Padding="10,5" Click="StartButton_Click" Tag="{Binding Id}" Background="#4caf50" Foreground="White" CornerRadius="5"/>
+                                            <Button Content="停止" Margin="5,0" Padding="10,5" Click="StopButton_Click" Tag="{Binding Id}" Background="#f44336" Foreground="White" CornerRadius="5"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+
+                <!-- 视图 2：控制台 -->
+                <Grid Name="ViewConsole" IsVisible="False" RowDefinitions="*, Auto">
+                    <!-- 控制台保持黑色背景，看日志更清楚，但加了粉色边框 -->
+                    <Border Grid.Row="0" Background="#1e1e1e" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="#ffb6c1" BorderThickness="2">
+                        <ScrollViewer Name="LogScrollViewer" VerticalScrollBarVisibility="Auto">
+                            <TextBlock Name="LogTextBlock" Foreground="#cccccc" FontFamily="Consolas" FontSize="13" TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </Border>
+                    
+                    <Grid Grid.Row="1" ColumnDefinitions="*, Auto">
+                        <TextBox Name="CmdInput" PlaceholderText="输入指令并回车..." Background="#ffffff" Foreground="#333333" Padding="10" KeyDown="CmdInput_KeyDown" BorderBrush="#ffb6c1" BorderThickness="1" CornerRadius="5"/>
+                        <Button Content="发送" Grid.Column="1" Margin="10,0,0,0" Padding="15,10" Click="BtnSendCmd_Click" Background="#d63384" Foreground="White" CornerRadius="5"/>
+                    </Grid>
+                </Grid>
+
+                <!-- 视图 3：文件管理 -->
+                <StackPanel Name="ViewFiles" IsVisible="False">
+                    <TextBlock Text="文件管理" FontSize="24" FontWeight="Bold" Foreground="#333333" Margin="0,0,0,20"/>
+                    <TextBlock Text="功能开发中..." Foreground="#666666"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
