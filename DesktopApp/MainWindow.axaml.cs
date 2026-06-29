@@ -7,13 +7,13 @@ using System.Text;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.Platform.Storage;
 using Microsoft.AspNetCore.SignalR.Client;
-using DesktopApp;
 
 namespace DesktopApp;
 
@@ -30,12 +30,30 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeBackendConnection();
+        
+        // 让标题栏可拖拽（简化版）
+        var titleBar = this.FindControl<Grid>("TitleBar");
+        if (titleBar != null)
+        {
+            titleBar.PointerPressed += (s, e) =>
+            {
+                // 检查点击源是否是按钮，如果是则不触发拖拽
+                if (e.Source is Button)
+                {
+                    return; // 是按钮点击，不执行拖拽
+                }
+                
+                if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                {
+                    this.BeginMoveDrag(e);
+                }
+            };
+        }
     }
 
     // ================= 1. 后端连接与初始化 =================
     private async void InitializeBackendConnection()
     {
-        // 读取端口
         int backendPort = 5139;
         string portFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "port.txt");
         if (System.IO.File.Exists(portFilePath))
@@ -50,7 +68,6 @@ public partial class MainWindow : Window
             .WithAutomaticReconnect()
             .Build();
 
-        // 监听日志
         _connection.On<string, string>("ReceiveLog", (instanceId, message) =>
         {
             if (instanceId == _currentInstanceId)
@@ -68,7 +85,6 @@ public partial class MainWindow : Window
             }
         });
 
-        // 监听状态变化
         _connection.On<string, string>("InstanceStatusChanged", (id, status) =>
         {
             Dispatcher.UIThread.InvokeAsync(async () =>
@@ -114,6 +130,16 @@ public partial class MainWindow : Window
         OpenFileManager();
     }
 
+    private void BtnMinimize_Click(object? sender, RoutedEventArgs e)
+    {
+        this.WindowState = WindowState.Minimized;
+    }
+
+    private void BtnClose_Click(object? sender, RoutedEventArgs e)
+    {
+        this.Close();
+    }
+
     private void SwitchView(string viewName)
     {
         var viewList = this.FindControl<StackPanel>("ViewList");
@@ -144,33 +170,92 @@ public partial class MainWindow : Window
 
     private async void BtnAddInstance_Click(object? sender, RoutedEventArgs e)
     {
-        var dialog = new MainWindow();
-        var result = await dialog.ShowDialog<InstanceDto?>(this);
-
-        if (result != null)
+        // 【修复】动态创建一个无边框的粉色弹窗，不再使用 new MainWindow()
+        var dialog = new Window
         {
-            try
+            Title = "新建实例",
+            Width = 400,
+            Height = 300,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Brush.Parse("#fff0f5"),
+            CanResize = false,
+            WindowDecorations = WindowDecorations.None
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        
+        panel.Children.Add(new TextBlock 
+        { 
+            Text = "✨ 新建 MC 实例", 
+            FontSize = 18, 
+            FontWeight = FontWeight.Bold, 
+            Foreground = Brush.Parse("#d63384"), 
+            Margin = new Thickness(0, 0, 0, 15) 
+        });
+
+        var txtName = new TextBox { Watermark = "实例名称 (如: 我的生存服)", Margin = new Thickness(0, 0, 0, 10), Background = Brushes.White, Foreground = Brush.Parse("#333333") };
+        panel.Children.Add(txtName);
+
+        var txtPath = new TextBox { Watermark = "服务端路径 (如: D:/MCServer)", Margin = new Thickness(0, 0, 0, 10), Background = Brushes.White, Foreground = Brush.Parse("#333333") };
+        panel.Children.Add(txtPath);
+
+        var txtJar = new TextBox { Watermark = "核心文件名", Text = "server.jar", Margin = new Thickness(0, 0, 0, 20), Background = Brushes.White, Foreground = Brush.Parse("#333333") };
+        panel.Children.Add(txtJar);
+
+        var btnCreate = new Button 
+        { 
+            Content = "✅ 创建实例", 
+            Background = Brush.Parse("#4caf50"), 
+            Foreground = Brushes.White, 
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Padding = new Thickness(10),
+            FontWeight = FontWeight.Bold
+        };
+        
+        btnCreate.Click += async (s, ev) =>
+        {
+            if (string.IsNullOrWhiteSpace(txtName.Text) || string.IsNullOrWhiteSpace(txtPath.Text))
             {
-                var jsonData = JsonSerializer.Serialize(result);
-                var content = new StringContent(jsonData, Encoding.UTF8);
+                txtName.Watermark = "⚠️ 请填写名称和路径！";
+                return;
+            }
+
+            var newInstance = new InstanceDto
+            {
+                Name = txtName.Text,
+                ServerPath = txtPath.Text,
+                JarName = string.IsNullOrWhiteSpace(txtJar.Text) ? "server.jar" : txtJar.Text,
+                JvmArgs = "-Xms1G -Xmx2G",
+                Status = "Stopped"
+            };
+
+            try 
+            {
+                var jsonData = JsonSerializer.Serialize(newInstance);
+                var content = new StringContent(jsonData);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                
                 var response = await _http.PostAsync("/api/instances", content);
                 
-                if (response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode) 
                 {
                     await LoadInstances();
                 }
-            }
-            catch (Exception ex)
+            } 
+            catch (Exception ex) 
             {
                 System.Console.WriteLine($"创建失败: {ex.Message}");
             }
-        }
+
+            dialog.Close();
+        };
+
+        panel.Children.Add(btnCreate);
+        
+        dialog.Content = panel;
+        await dialog.ShowDialog(this);
     }
 
-    // 实例卡片点击事件（选中实例）
-    private void InstanceCard_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    private void InstanceCard_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.Source is Button) return;
         
@@ -187,7 +272,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // 卡片上的控制台按钮
     private void BtnCardConsole_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string id)
@@ -197,7 +281,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // 卡片上的文件管理按钮
     private void BtnCardFiles_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string id)
@@ -207,7 +290,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // 卡片上的启动按钮
     private async void BtnStart_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string id)
@@ -216,7 +298,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // 卡片上的停止按钮
     private async void BtnStop_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string id)
@@ -238,9 +319,9 @@ public partial class MainWindow : Window
     // ================= 4. 控制台指令发送 =================
     private async void BtnSendCmd_Click(object? sender, RoutedEventArgs e) => await SendCommand();
     
-    private async void CmdInput_KeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    private async void CmdInput_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Avalonia.Input.Key.Enter) await SendCommand();
+        if (e.Key == Key.Enter) await SendCommand();
     }
 
     private async System.Threading.Tasks.Task SendCommand()
@@ -333,7 +414,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void FileListBox_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    private async void FileListBox_DoubleTapped(object? sender, TappedEventArgs e)
     {
         if (this.FindControl<ListBox>("FileListBox")?.SelectedItem is FileItemDto file)
         {
@@ -391,38 +472,72 @@ public partial class MainWindow : Window
             Height = 150,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Background = Brush.Parse("#fff0f5"),
-            CanResize = false
+            CanResize = false,
+            WindowDecorations = WindowDecorations.None,
+            SizeToContent = SizeToContent.Manual
         };
 
-        var stackPanel = new StackPanel
+        var grid = new Grid();
+        grid.RowDefinitions = new RowDefinitions("30,*");
+        
+        var titleGrid = new Grid();
+        titleGrid.Background = Brush.Parse("#d63384");
+        Grid.SetRow(titleGrid, 0);
+        
+        var titleText = new TextBlock
         {
-            Margin = new Thickness(20),
-            Children =
-            {
-                new TextBlock 
-                { 
-                    Text = message, 
-                    FontSize = 14, 
-                    Foreground = Brush.Parse("#333333"), 
-                    TextWrapping = TextWrapping.Wrap 
-                }
-            }
+            Text = title,
+            Foreground = Brushes.White,
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 0, 0)
         };
-
+        
+        var closeButton = new Button
+        {
+            Content = "✕",
+            Width = 30,
+            Height = 30,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Background = Brushes.Transparent,
+            Foreground = Brushes.White,
+            FontSize = 14,
+            FontWeight = FontWeight.Bold
+        };
+        closeButton.Click += (s, e) => dialog.Close();
+        
+        titleGrid.Children.Add(titleText);
+        titleGrid.Children.Add(closeButton);
+        grid.Children.Add(titleGrid);
+        
+        var contentPanel = new StackPanel();
+        contentPanel.Margin = new Thickness(20);
+        Grid.SetRow(contentPanel, 1);
+        
+        var messageText = new TextBlock
+        {
+            Text = message,
+            FontSize = 14,
+            Foreground = Brush.Parse("#333333"),
+            TextWrapping = TextWrapping.Wrap
+        };
+        
         var okButton = new Button
         {
             Content = "确定",
             Margin = new Thickness(0, 20, 0, 0),
-            Padding = new Thickness(20, 8),
+            Padding = new Thickness(30, 8),
             HorizontalAlignment = HorizontalAlignment.Center,
             Background = Brush.Parse("#d63384"),
             Foreground = Brushes.White
         };
-
         okButton.Click += (s, e) => dialog.Close();
-        stackPanel.Children.Add(okButton);
-        dialog.Content = stackPanel;
-
+        
+        contentPanel.Children.Add(messageText);
+        contentPanel.Children.Add(okButton);
+        grid.Children.Add(contentPanel);
+        
+        dialog.Content = grid;
         await dialog.ShowDialog(this);
     }
 }
