@@ -5,14 +5,14 @@
         Title="MC 面板 V10 - 樱花粉版"
         Width="1100" Height="750"
         WindowStartupLocation="CenterScreen"
-        Background="#fff0f5"> <!-- 窗口背景：极淡粉 -->
+        Background="#fff0f5">
 
     <Grid ColumnDefinitions="220, *" Background="#fff0f5">
         
         <!-- 左侧导航栏 -->
-        <Border Grid.Column="0" Background="#ffe4e9" Padding="15"> <!-- 侧边栏：柔粉 -->
+        <Border Grid.Column="0" Background="#ffe4e9" Padding="15">
             <StackPanel>
-                <TextBlock Text=" MC 面板 V10" FontSize="20" FontWeight="Bold" Foreground="#d63384" Margin="0,0,0,30"/> <!-- 标题：深粉色 -->
+                <TextBlock Text=" MC 面板 V10" FontSize="20" FontWeight="Bold" Foreground="#d63384" Margin="0,0,0,30"/>
                 
                 <Button Content="📋 实例列表" Name="BtnList" Margin="0,8" Padding="10" HorizontalAlignment="Stretch" Click="BtnList_Click" Background="#ffb6c1" Foreground="White"/>
                 <Button Content="💻 控制台" Name="BtnConsole" Margin="0,8" Padding="10" HorizontalAlignment="Stretch" Click="BtnConsole_Click" Background="#ffb6c1" Foreground="White"/>
@@ -31,25 +31,38 @@
                 
                 <!-- 视图 1：实例列表 -->
                 <StackPanel Name="ViewList" IsVisible="True">
-                    <TextBlock Text="服务器实例" FontSize="24" FontWeight="Bold" Foreground="#333333" Margin="0,0,0,20"/> <!-- 标题：深灰 -->
+                    <TextBlock Text="服务器实例" FontSize="24" FontWeight="Bold" Foreground="#333333" Margin="0,0,0,20"/>
                     <Button Content="+ 新建实例" Name="BtnAddInstance" HorizontalAlignment="Right" Margin="0,0,0,10" Click="BtnAddInstance_Click" Background="#d63384" Foreground="White"/>
                     
                     <ListBox Name="InstanceListBox" 
-                             Background="#ffe6ea" 
+                             Background="#ffe6ea"
                              Foreground="#333333"
-                             SelectionChanged="InstanceListBox_SelectionChanged"
+                             SelectionMode="Single"
                              Margin="0,10">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="local:InstanceDto">
-                                <Border Background="#ffffff" Padding="15" Margin="0,5" CornerRadius="8" BorderBrush="#ffb6c1" BorderThickness="1"> <!-- 卡片：纯白边框粉 -->
+                                <Border Background="#ffffff" Padding="15" Margin="0,5" CornerRadius="8" 
+                                        BorderBrush="#ffb6c1" BorderThickness="1"
+                                        PointerPressed="InstanceCard_PointerPressed"
+                                        Cursor="Hand">
                                     <Grid ColumnDefinitions="*, Auto">
                                         <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#d63384"/> <!-- 实例名：深粉 -->
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="#d63384"/>
                                             <TextBlock Text="{Binding Status}" Foreground="#666666" Margin="0,5,0,0"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Grid.Column="1">
-                                            <Button Content="启动" Margin="5,0" Padding="10,5" Click="StartButton_Click" Tag="{Binding Id}" Background="#4caf50" Foreground="White" CornerRadius="5"/>
-                                            <Button Content="停止" Margin="5,0" Padding="10,5" Click="StopButton_Click" Tag="{Binding Id}" Background="#f44336" Foreground="White" CornerRadius="5"/>
+                                            <Button Content="💻 控制台" Margin="5,0" Padding="10,5" 
+                                                    Click="BtnCardConsole_Click" Tag="{Binding Id}"
+                                                    Background="#2196f3" Foreground="White" CornerRadius="5"/>
+                                            <Button Content="📁 文件" Margin="5,0" Padding="10,5" 
+                                                    Click="BtnCardFiles_Click" Tag="{Binding Id}"
+                                                    Background="#ff9800" Foreground="White" CornerRadius="5"/>
+                                            <Button Content="▶️ 启动" Margin="5,0" Padding="10,5" 
+                                                    Click="BtnStart_Click" Tag="{Binding Id}"
+                                                    Background="#4caf50" Foreground="White" CornerRadius="5"/>
+                                            <Button Content="⏹️ 停止" Margin="5,0" Padding="10,5" 
+                                                    Click="BtnStop_Click" Tag="{Binding Id}"
+                                                    Background="#f44336" Foreground="White" CornerRadius="5"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -60,7 +73,6 @@
 
                 <!-- 视图 2：控制台 -->
                 <Grid Name="ViewConsole" IsVisible="False" RowDefinitions="*, Auto">
-                    <!-- 控制台保持黑色背景，看日志更清楚，但加了粉色边框 -->
                     <Border Grid.Row="0" Background="#1e1e1e" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="#ffb6c1" BorderThickness="2">
                         <ScrollViewer Name="LogScrollViewer" VerticalScrollBarVisibility="Auto">
                             <TextBlock Name="LogTextBlock" Foreground="#cccccc" FontFamily="Consolas" FontSize="13" TextWrapping="Wrap"/>
@@ -74,10 +86,39 @@
                 </Grid>
 
                 <!-- 视图 3：文件管理 -->
-                <StackPanel Name="ViewFiles" IsVisible="False">
-                    <TextBlock Text="文件管理" FontSize="24" FontWeight="Bold" Foreground="#333333" Margin="0,0,0,20"/>
-                    <TextBlock Text="功能开发中..." Foreground="#666666"/>
-                </StackPanel>
+                <Grid Name="ViewFiles" IsVisible="False" RowDefinitions="Auto, Auto, *">
+                    <!-- 顶部工具栏 -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,10">
+                        <Button Content="⬅️ 返回上级" Name="BtnBack" Padding="10,5" Click="BtnBack_Click" Background="#d63384" Foreground="White" CornerRadius="5"/>
+                        <TextBox Grid.Column="1" Name="TxtCurrentPath" Background="#ffffff" Foreground="#333333" Padding="8" Margin="10,0" BorderBrush="#ffb6c1" BorderThickness="1" CornerRadius="5" IsReadOnly="True"/>
+                        <Button Grid.Column="2" Content="🔄 刷新" Padding="10,5" Click="BtnRefresh_Click" Background="#2196f3" Foreground="White" CornerRadius="5"/>
+                    </Grid>
+                    
+                    <!-- 文件列表 -->
+                    <ListBox Grid.Row="2" Name="FileListBox" 
+                             Background="#ffffff" 
+                             Foreground="#333333"
+                             SelectionMode="Single"
+                             DoubleTapped="FileListBox_DoubleTapped"
+                             Margin="0,10">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="local:FileItemDto">
+                                <Border Background="#fff0f5" Padding="10" Margin="0,2" CornerRadius="5" BorderBrush="#ffe4e9" BorderThickness="1">
+                                    <Grid ColumnDefinitions="Auto, *, Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="18" Margin="0,0,10,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#333333"/>
+                                            <TextBlock Text="{Binding SizeText}" FontSize="12" Foreground="#666666"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                            <Button Content="📥 下载" Padding="8,4" Click="BtnDownload_Click" Tag="{Binding Path}" Background="#4caf50" Foreground="White" CornerRadius="3" IsVisible="{Binding !IsDirectory}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
 
             </Grid>
         </Border>
